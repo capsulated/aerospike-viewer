@@ -3,3 +3,5 @@
 /dev/aerospike/data/
 /aerospike-viewer
 /.idea
+/go.sum
+/go.mod
