@@ -1,0 +1,5 @@
+# Created by .ignore support plugin (hsz.mobi)
+
+/dev/aerospike/data/
+/aerospike-viewer
+/.idea
