@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/aerospike/aerospike-client-go"
 	"github.com/caarlos0/env"
 	"html/template"
@@ -28,6 +29,19 @@ type PageAerospikeData struct {
 	AdvCabinetRows []AdvCabinetRow
 }
 
+type DspProxyTrackerRow struct {
+	PageTitle   string
+	PushID      string
+	SSP         string
+	DSP         string
+	IconURL     string
+	ClickAction string
+	Country     string
+	Node        string
+	PriceSell   string
+	PriceBuy    string
+}
+
 type config struct {
 	AerospikeHosts []string `env:"AEROSPIKE_HOSTS" envDefault:"127.0.0.1" envSeparator:","`
 	AerospikePort  int      `env:"AEROSPIKE_PORT" envDefault:"3000"`
@@ -46,6 +60,7 @@ func initEnv() {
 	if err != nil {
 		log.Fatal("failed to parse env: " + err.Error())
 	}
+	log.Printf("cfg: %v", cfg)
 }
 
 func initAerospike() {
@@ -67,9 +82,10 @@ func initAerospike() {
 func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
-	tmpl := template.Must(template.ParseFiles("templates/tables.html"))
+	tmplCamp := template.Must(template.ParseFiles("templates/campaigns.html"))
+	tmplDsp := template.Must(template.ParseFiles("templates/dspproxy.html"))
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/campaigns", func(w http.ResponseWriter, r *http.Request) {
 		data := PageAerospikeData{
 			PageTitle:      "AerospikeSet: " + cfg.AerospikeNS,
 			AdvCabinetRows: []AdvCabinetRow{},
@@ -88,7 +104,62 @@ func main() {
 			})
 		}
 
-		tmpl.Execute(w, data)
+		tmplCamp.Execute(w, data)
+	})
+
+	http.HandleFunc("/pushid", func(w http.ResponseWriter, r *http.Request) {
+		keys, ok := r.URL.Query()["key"]
+		if !ok || len(keys[0]) < 1 {
+			log.Println("Url Param 'key' is missing")
+			return
+		}
+
+		keyAs := fmt.Sprintf("push:%s", keys[0])
+		log.Println("keyAs: " + keyAs)
+
+		key, err := aerospike.NewKey(cfg.AerospikeNS, "dsp_proxy_tracker", keyAs)
+		if err != nil {
+			log.Println("Create AS key error" + err.Error())
+			w.Write([]byte("Create AS key error"))
+			return
+		}
+
+		rec, err := asClient.Get(nil, key)
+		if err != nil {
+			log.Println("Get rec error: " + err.Error())
+			w.Write([]byte("Key not Found"))
+			return
+		}
+
+		data := DspProxyTrackerRow{
+			PageTitle:   "DSP Proxy Tracker",
+			PushID:      keys[0],
+			SSP:         rec.Bins["ssp"].(string),
+			DSP:         rec.Bins["dsp"].(string),
+			IconURL:     rec.Bins["icon-url"].(string),
+			ClickAction: rec.Bins["click-action"].(string),
+			Country:     rec.Bins["country"].(string),
+			Node:        rec.Bins["node"].(string),
+			PriceSell:   rec.Bins["price-sell"].(string),
+			PriceBuy:    rec.Bins["price-buy"].(string),
+		}
+
+		//
+		//bin["ssp"] = ssp_host[0]
+		//bin["dsp"] = win.Name
+		//bin["icon-url"] = win.Img
+		//bin["click-action"] = win.ClickUrl
+		//bin["country"] = win.Country
+		//bin["node"] = node
+		//// bin["safe-uid"] = safeUID
+		//bin["price-sell"] = strconv.FormatFloat(win.Price, 'f', 6, 64)
+		//bin["price-buy"] = strconv.FormatFloat(win.Price, 'f', 6, 64)
+		//
+		err = tmplDsp.Execute(w, data)
+		if err != nil {
+			log.Println("Template generating error: " + err.Error())
+			w.Write([]byte("Server err"))
+		}
 	})
 
 	http.ListenAndServe(":8000", nil)
