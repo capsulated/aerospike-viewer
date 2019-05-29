@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 )
 
 var (
@@ -60,7 +61,7 @@ func initEnv() {
 	if err != nil {
 		log.Fatal("failed to parse env: " + err.Error())
 	}
-	log.Printf("cfg: %v", cfg)
+	log.Printf("config: %#v", cfg)
 }
 
 func initAerospike() {
@@ -74,6 +75,7 @@ func initAerospike() {
 	asClient, err = aerospike.NewClientWithPolicyAndHost(nil, hosts...)
 	if err != nil {
 		log.Println("failed to create aerospike client: " + err.Error())
+		os.Exit(1)
 	}
 
 	log.Println("aerospike connection established")
