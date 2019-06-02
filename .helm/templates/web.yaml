@@ -1,0 +1,32 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ .Values.app }}-web
+  labels:
+    app: {{ .Values.app }}
+    component: {{ .Values.app }}-web
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.app }}
+      component: {{ .Values.app }}-web
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app }}
+        component: {{ .Values.app }}-web
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: {{ .Values.app }}-web
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        {{- range $envVar := .Values.env.data }}
+        - name: {{ $envVar }}
+          valueFrom:
+            secretKeyRef:
+                name: {{ $.Values.env.secretsName }}
+                key: {{ $envVar }}
+        {{- end }}

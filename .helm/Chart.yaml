@@ -1,0 +1,4 @@
+apiVersion: v1
+description: aerospike-viewer chart for Kubernetes
+name: .helm
+version: 1.0.0
