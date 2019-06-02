@@ -88,6 +88,19 @@ func main() {
 	tmplDsp := template.Must(template.ParseFiles("templates/dspproxy.html"))
 
 	http.HandleFunc("/campaigns", func(w http.ResponseWriter, r *http.Request) {
+		hello, ok := r.URL.Query()["hello"]
+		if !ok || len(hello[0]) < 1 {
+			w.Write([]byte("bad request"))
+			log.Println("no token!")
+			return
+		}
+
+		if hello[0] != "6N5mKy4iz0dydOAGxJ7gWptRmo6JyIG6w89Wwe4H" {
+			w.Write([]byte("bad request"))
+			log.Println("token= incorrect")
+			return
+		}
+
 		data := PageAerospikeData{
 			PageTitle:      "AerospikeSet: " + cfg.AerospikeNS,
 			AdvCabinetRows: []AdvCabinetRow{},
@@ -110,6 +123,19 @@ func main() {
 	})
 
 	http.HandleFunc("/pushid", func(w http.ResponseWriter, r *http.Request) {
+		hello, ok := r.URL.Query()["hello"]
+		if !ok || len(hello[0]) < 1 {
+			w.Write([]byte("bad request"))
+			log.Println("no token!")
+			return
+		}
+
+		if hello[0] != "6N5mKy4iz0dydOAGxJ7gWptRmo6JyIG6w89Wwe4H" {
+			w.Write([]byte("bad request"))
+			log.Println("token= incorrect")
+			return
+		}
+
 		keys, ok := r.URL.Query()["key"]
 		if !ok || len(keys[0]) < 1 {
 			log.Println("Url Param 'key' is missing")
